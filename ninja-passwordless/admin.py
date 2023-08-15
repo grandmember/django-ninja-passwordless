@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import reverse
-from drfpasswordless.models import CallbackToken
+from ninjapasswordless.models import CallbackToken
 
 
 class UserLinkMixin(object):

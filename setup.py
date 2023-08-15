@@ -14,9 +14,9 @@ from shutil import rmtree
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
-name = 'drfpasswordless'
+name = 'ninjapasswordless'
 
-NAME = 'drfpasswordless'
+NAME = 'ninjapasswordless'
 DESCRIPTION = 'Passwordless auth for Django Rest Framework Token Authentication.'
 URL = 'https://github.com/aaronn/django-rest-framework-passwordless'
 EMAIL = 'email@0xaaron.com'
@@ -26,7 +26,7 @@ VERSION = None
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'Django', 'djangorestframework'
+    'Django', 'django-ninja'
 ]
 
 # The rest you shouldn't have to touch too much :)

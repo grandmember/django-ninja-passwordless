@@ -5,9 +5,9 @@ from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.template import loader
 from django.utils import timezone
-from rest_framework.authtoken.models import Token
-from drfpasswordless.models import CallbackToken
-from drfpasswordless.settings import api_settings
+from ninjapasswordless.models import CallbackToken
+from ninjapasswordless.settings import api_settings
+from ninja_jwt.tokens import Token
 
 
 logger = logging.getLogger(__name__)
@@ -17,23 +17,17 @@ User = get_user_model()
 def authenticate_by_token(callback_token):
     try:
         token = CallbackToken.objects.get(key=callback_token, is_active=True, type=CallbackToken.TOKEN_TYPE_AUTH)
-
-        # Returning a user designates a successful authentication.
         token.user = User.objects.get(pk=token.user.pk)
         token.is_active = False  # Mark this token as used.
         token.save()
-
         return token.user
-
     except CallbackToken.DoesNotExist:
-        logger.debug("drfpasswordless: Challenged with a callback token that doesn't exist.")
+        logger.debug("ninjapasswordless: Challenged with a callback token that doesn't exist.")
     except User.DoesNotExist:
-        logger.debug("drfpasswordless: Authenticated user somehow doesn't exist.")
+        logger.debug("ninjapasswordless: Authenticated user somehow doesn't exist.")
     except PermissionDenied:
-        logger.debug("drfpasswordless: Permission denied while authenticating.")
-
+        logger.debug("ninjapasswordless: Permission denied while authenticating.")
     return None
-
 
 def create_callback_token_for_user(user, alias_type, token_type):
     token = None
@@ -210,4 +204,5 @@ def send_sms_with_callback_token(user, mobile_token, **kwargs):
 
 def create_authentication_token(user):
     """ Default way to create an authentication token"""
-    return Token.objects.get_or_create(user=user)
+    token = Token.for_user(user)
+    return token

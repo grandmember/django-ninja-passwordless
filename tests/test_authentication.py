@@ -1,29 +1,39 @@
-from rest_framework import status
-from rest_framework.authtoken.models import Token
-from rest_framework.test import APITestCase
+from django.test import TestCase, Client
+from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from drfpasswordless.settings import api_settings, DEFAULTS
-from drfpasswordless.utils import CallbackToken
+from ninjapasswordless.settings import api_settings, DEFAULTS  # Assuming you rename the import paths
+from ninjapasswordless.utils import CallbackToken  # Assuming you rename the import paths
 
 User = get_user_model()
 
 
-class EmailSignUpCallbackTokenTests(APITestCase):
+User = get_user_model()
+
+
+class AuthTypeTests(TestCase):
 
     def setUp(self):
-        api_settings.PASSWORDLESS_EMAIL_NOREPLY_ADDRESS = 'noreply@example.com'
-        self.email_field_name = api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME
+        api_settings.PASSWORDLESS_AUTH_TYPES = ['EMAIL', 'MOBILE']
+        api_settings.PASSWORDLESS_TEST_SUPPRESSION = True
 
-        self.url = reverse('drfpasswordless:auth_email')
+        self.client = Client()
+
+        self.email = 'aaron@example.com'
+        self.email_url = reverse('ninjapasswordless:auth_email')  # Assuming you rename the import paths
+        self.email_data = {'email': self.email}
+
+        self.mobile = '+15551234567'
+        self.mobile_url = reverse('ninjapasswordless:auth_mobile')  # Assuming you rename the import paths
+        self.mobile_data = {'mobile': self.mobile}
 
     def test_email_signup_failed(self):
         email = 'failedemail182+'
         data = {'email': email}
 
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
     def test_email_signup_success(self):
         email = 'aaron@example.com'
@@ -36,7 +46,7 @@ class EmailSignUpCallbackTokenTests(APITestCase):
 
         # verify a new user was created with serializer
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
         user = User.objects.get(**{self.email_field_name: 'aaron@example.com'})
         self.assertNotEqual(user, None)
 
@@ -56,7 +66,7 @@ class EmailSignUpCallbackTokenTests(APITestCase):
 
         # verify a new user was not created
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
         user = User.objects.filter(**{self.email_field_name: 'aaron@example.com'}).first()
         self.assertEqual(user, None)
@@ -65,19 +75,23 @@ class EmailSignUpCallbackTokenTests(APITestCase):
         self.assertEqual(CallbackToken.objects.filter(user=user, is_active=True).exists(), 0)
 
     def tearDown(self):
+        api_settings.PASSWORDLESS_AUTH_TYPES = DEFAULTS['PASSWORDLESS_AUTH_TYPES']
         api_settings.PASSWORDLESS_EMAIL_NOREPLY_ADDRESS = DEFAULTS['PASSWORDLESS_EMAIL_NOREPLY_ADDRESS']
-        api_settings.PASSWORDLESS_REGISTER_NEW_USERS = DEFAULTS['PASSWORDLESS_REGISTER_NEW_USERS']
+        api_settings.PASSWORDLESS_MOBILE_NOREPLY_NUMBER = DEFAULTS['PASSWORDLESS_MOBILE_NOREPLY_NUMBER']
+
+        api_settings.PASSWORDLESS_TEST_SUPPRESSION = DEFAULTS['PASSWORDLESS_TEST_SUPPRESSION']
 
 
-class EmailLoginCallbackTokenTests(APITestCase):
+
+class EmailLoginCallbackTokenTests(TestCase):
 
     def setUp(self):
         api_settings.PASSWORDLESS_AUTH_TYPES = ['EMAIL']
         api_settings.PASSWORDLESS_EMAIL_NOREPLY_ADDRESS = 'noreply@example.com'
 
         self.email = 'aaron@example.com'
-        self.url = reverse('drfpasswordless:auth_email')
-        self.challenge_url = reverse('drfpasswordless:auth_token')
+        self.url = reverse('ninjapasswordless:auth_email')
+        self.challenge_url = reverse('ninjapasswordless:auth_token')
 
         self.email_field_name = api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME
         self.user = User.objects.create(**{self.email_field_name: self.email})
@@ -85,19 +99,19 @@ class EmailLoginCallbackTokenTests(APITestCase):
     def test_email_auth_failed(self):
         data = {'email': self.email}
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Token sent to alias
         challenge_data = {'email': self.email, 'token': '123456'}  # Send an arbitrary token instead
 
         # Try to auth with the callback token
         challenge_response = self.client.post(self.challenge_url, challenge_data)
-        self.assertEqual(challenge_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(challenge_response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
     def test_email_auth_missing_alias(self):
         data = {'email': self.email}
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Token sent to alias
         callback_token = CallbackToken.objects.filter(user=self.user, is_active=True).first()
@@ -105,12 +119,12 @@ class EmailLoginCallbackTokenTests(APITestCase):
 
         # Try to auth with the callback token
         challenge_response = self.client.post(self.challenge_url, challenge_data)
-        self.assertEqual(challenge_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(challenge_response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
     def test_email_auth_bad_alias(self):
         data = {'email': self.email}
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Token sent to alias
         callback_token = CallbackToken.objects.filter(user=self.user, is_active=True).first()
@@ -118,12 +132,12 @@ class EmailLoginCallbackTokenTests(APITestCase):
 
         # Try to auth with the callback token
         challenge_response = self.client.post(self.challenge_url, challenge_data)
-        self.assertEqual(challenge_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(challenge_response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
     def test_email_auth_expired(self):
         data = {'email': self.email}
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Token sent to alias
         callback_token = CallbackToken.objects.filter(user=self.user, is_active=True).first()
@@ -131,7 +145,7 @@ class EmailLoginCallbackTokenTests(APITestCase):
 
         data = {'email': self.email}
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Second token sent to alias
         second_callback_token = CallbackToken.objects.filter(user=self.user, is_active=True).first()
@@ -139,11 +153,11 @@ class EmailLoginCallbackTokenTests(APITestCase):
 
         # Try to auth with the old callback token
         challenge_response = self.client.post(self.challenge_url, challenge_data)
-        self.assertEqual(challenge_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(challenge_response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
         # Try to auth with the new callback token
         second_challenge_response = self.client.post(self.challenge_url, second_challenge_data)
-        self.assertEqual(second_challenge_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(second_challenge_response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Verify Auth Token
         auth_token = second_challenge_response.data['token']
@@ -152,7 +166,7 @@ class EmailLoginCallbackTokenTests(APITestCase):
     def test_email_auth_success(self):
         data = {'email': self.email}
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Token sent to alias
         callback_token = CallbackToken.objects.filter(user=self.user, is_active=True).first()
@@ -160,7 +174,7 @@ class EmailLoginCallbackTokenTests(APITestCase):
 
         # Try to auth with the callback token
         challenge_response = self.client.post(self.challenge_url, challenge_data)
-        self.assertEqual(challenge_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(challenge_response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Verify Auth Token
         auth_token = challenge_response.data['token']
@@ -177,13 +191,13 @@ Mobile Tests
 """
 
 
-class MobileSignUpCallbackTokenTests(APITestCase):
+class MobileSignUpCallbackTokenTests(TestCase):
 
     def setUp(self):
         api_settings.PASSWORDLESS_TEST_SUPPRESSION = True
         api_settings.PASSWORDLESS_AUTH_TYPES = ['MOBILE']
         api_settings.PASSWORDLESS_MOBILE_NOREPLY_NUMBER = '+15550000000'
-        self.url = reverse('drfpasswordless:auth_mobile')
+        self.url = reverse('ninjapasswordless:auth_mobile')
 
         self.mobile_field_name = api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME
 
@@ -192,7 +206,7 @@ class MobileSignUpCallbackTokenTests(APITestCase):
         data = {'mobile': mobile}
 
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
     def test_mobile_signup_success(self):
         mobile = '+15551234567'
@@ -205,7 +219,7 @@ class MobileSignUpCallbackTokenTests(APITestCase):
 
         # verify a new user was created with serializer
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
         user = User.objects.get(**{self.mobile_field_name: '+15551234567'})
         self.assertNotEqual(user, None)
 
@@ -225,7 +239,7 @@ class MobileSignUpCallbackTokenTests(APITestCase):
 
         # verify a new user was not created
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
         user = User.objects.filter(**{self.mobile_field_name: '+15557654321'}).first()
         self.assertEqual(user, None)
@@ -245,7 +259,7 @@ def dummy_token_creator(user):
     return (token, True)
 
 
-class OverrideTokenCreationTests(APITestCase):
+class OverrideTokenCreationTests(TestCase):
     def setUp(self):
         super().setUp()
 
@@ -254,8 +268,8 @@ class OverrideTokenCreationTests(APITestCase):
         api_settings.PASSWORDLESS_EMAIL_NOREPLY_ADDRESS = 'noreply@example.com'
 
         self.email = 'aaron@example.com'
-        self.url = reverse('drfpasswordless:auth_email')
-        self.challenge_url = reverse('drfpasswordless:auth_token')
+        self.url = reverse('ninjapasswordless:auth_email')
+        self.challenge_url = reverse('ninjapasswordless:auth_token')
 
         self.email_field_name = api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME
         self.user = User.objects.create(**{self.email_field_name: self.email})
@@ -264,7 +278,7 @@ class OverrideTokenCreationTests(APITestCase):
         """Ensure that if we change the token creation function, the overridden one gets called"""
         data = {'email': self.email}
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Token sent to alias
         callback_token = CallbackToken.objects.filter(user=self.user, is_active=True).first()
@@ -272,7 +286,7 @@ class OverrideTokenCreationTests(APITestCase):
 
         # Try to auth with the callback token
         challenge_response = self.client.post(self.challenge_url, challenge_data)
-        self.assertEqual(challenge_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(challenge_response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Verify Auth Token
         auth_token = challenge_response.data['token']
@@ -287,7 +301,7 @@ class OverrideTokenCreationTests(APITestCase):
         super().tearDown()
 
 
-class MobileLoginCallbackTokenTests(APITestCase):
+class MobileLoginCallbackTokenTests(TestCase):
 
     def setUp(self):
         api_settings.PASSWORDLESS_TEST_SUPPRESSION = True
@@ -295,8 +309,8 @@ class MobileLoginCallbackTokenTests(APITestCase):
         api_settings.PASSWORDLESS_MOBILE_NOREPLY_NUMBER = '+15550000000'
 
         self.mobile = '+15551234567'
-        self.url = reverse('drfpasswordless:auth_mobile')
-        self.challenge_url = reverse('drfpasswordless:auth_token')
+        self.url = reverse('ninjapasswordless:auth_mobile')
+        self.challenge_url = reverse('ninjapasswordless:auth_token')
 
         self.mobile_field_name = api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME
 
@@ -305,19 +319,19 @@ class MobileLoginCallbackTokenTests(APITestCase):
     def test_mobile_auth_failed(self):
         data = {'mobile': self.mobile}
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Token sent to alias
         challenge_data = {'mobile': self.mobile, 'token': '123456'}  # Send an arbitrary token instead
 
         # Try to auth with the callback token
         challenge_response = self.client.post(self.challenge_url, challenge_data)
-        self.assertEqual(challenge_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(challenge_response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
     def test_mobile_auth_expired(self):
         data = {'mobile': self.mobile}
         first_response = self.client.post(self.url, data)
-        self.assertEqual(first_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(first_response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Token sent to alias
         first_callback_token = CallbackToken.objects.filter(user=self.user, is_active=True).first()
@@ -325,7 +339,7 @@ class MobileLoginCallbackTokenTests(APITestCase):
 
         data = {'mobile': self.mobile}
         second_response = self.client.post(self.url, data)
-        self.assertEqual(second_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(second_response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Second token sent to alias
         second_callback_token = CallbackToken.objects.filter(user=self.user, is_active=True).first()
@@ -333,11 +347,11 @@ class MobileLoginCallbackTokenTests(APITestCase):
 
         # Try to auth with the old callback token
         challenge_response = self.client.post(self.challenge_url, first_challenge_data)
-        self.assertEqual(challenge_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(challenge_response.status_code, HTTPStatus.HTTP_400_BAD_REQUEST)
 
         # Try to auth with the new callback token
         second_challenge_response = self.client.post(self.challenge_url, second_challenge_data)
-        self.assertEqual(second_challenge_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(second_challenge_response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Verify Auth Token
         auth_token = second_challenge_response.data['token']
@@ -346,7 +360,7 @@ class MobileLoginCallbackTokenTests(APITestCase):
     def test_mobile_auth_success(self):
         data = {'mobile': self.mobile}
         response = self.client.post(self.url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Token sent to alias
         callback_token = CallbackToken.objects.filter(user=self.user, is_active=True).first()
@@ -354,7 +368,7 @@ class MobileLoginCallbackTokenTests(APITestCase):
 
         # Try to auth with the callback token
         challenge_response = self.client.post(self.challenge_url, challenge_data)
-        self.assertEqual(challenge_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(challenge_response.status_code, HTTPStatus.HTTP_200_OK)
 
         # Verify Auth Token
         auth_token = challenge_response.data['token']

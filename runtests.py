@@ -1,8 +1,11 @@
 #! /usr/bin/env python
-"""
-From https://github.com/tomchristie/django-rest-framework/blob/bf09c32de8f9d528f83e9cb7a2773d1f4c9ab563/runtests.py
-"""
+
+
 from __future__ import print_function
+
+import warnings
+warnings.filterwarnings(action="ignore")
+
 
 import pytest
 import sys
@@ -15,7 +18,7 @@ PYTEST_ARGS = {
     'fast': ['tests', '-q'],
 }
 
-FLAKE8_ARGS = ['drfpasswordless', 'tests', '--ignore=E501']
+FLAKE8_ARGS = ['ninjapasswordless', 'tests', '--ignore=E501']
 
 
 sys.path.append(os.path.dirname(__file__))

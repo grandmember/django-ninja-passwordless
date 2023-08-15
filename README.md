@@ -1,7 +1,7 @@
 ![splash-image]
 ![ci-image]
 
-drfpasswordless is a quick way to integrate ‘passwordless’ auth into
+ninjapasswordless is a quick way to integrate ‘passwordless’ auth into
 your Django Rest Framework project using a user’s email address or
 mobile number only (herein referred to as an alias).
 
@@ -49,10 +49,10 @@ Requirements
 Install
 =======
 
-1. Install drfpasswordless
+1. Install ninjapasswordless
 
    ```
-   pipenv install drfpasswordless
+   pipenv install ninjapasswordless
    ```
 
 2. Add Django Rest Framework’s Token Authentication to your Django Rest
@@ -68,7 +68,7 @@ Install
      ...
      'rest_framework',
      'rest_framework.authtoken',
-     'drfpasswordless',
+     'ninjapasswordless',
       ...
  ]
 ```
@@ -89,7 +89,7 @@ PASSWORDLESS_AUTH = {
 }
 ```
 
-   By default drfpasswordless looks for fields named ``email`` or ``mobile``
+   By default ninjapasswordless looks for fields named ``email`` or ``mobile``
    on the User model. If an alias provided doesn’t belong to any given user,
    a new user is created.
 
@@ -99,14 +99,14 @@ PASSWORDLESS_AUTH = {
    3b. If you’re using ``mobile``, see the Configuring Mobile section
    below.
 
-4. Add ``drfpasswordless.urls`` to your urls.py
+4. Add ``ninjapasswordless.urls`` to your urls.py
 
 ```python
  from django.urls import path, include
 
  urlpatterns = [
      ..
-     path('', include('drfpasswordless.urls')),
+     path('', include('ninjapasswordless.urls')),
      ..
  ]
 ```
@@ -305,20 +305,20 @@ DEFAULTS = {
     # should take a user and return a tuple of two values. The first value is
     # the token itself, the second is a boolean value representating whether
     # the token was newly created.
-    'PASSWORDLESS_AUTH_TOKEN_CREATOR': 'drfpasswordless.utils.create_authentication_token',
+    'PASSWORDLESS_AUTH_TOKEN_CREATOR': 'ninjapasswordless.utils.create_authentication_token',
     
     # What function is called to construct a serializer for drf tokens when
     # exchanging a passwordless token for a real user auth token.
-    'PASSWORDLESS_AUTH_TOKEN_SERIALIZER': 'drfpasswordless.serializers.TokenResponseSerializer',
+    'PASSWORDLESS_AUTH_TOKEN_SERIALIZER': 'ninjapasswordless.serializers.TokenResponseSerializer',
 
     # A dictionary of demo user's primary key mapped to their static pin
     'PASSWORDLESS_DEMO_USERS': {},
 
     # configurable function for sending email
-    'PASSWORDLESS_EMAIL_CALLBACK': 'drfpasswordless.utils.send_email_with_callback_token',
+    'PASSWORDLESS_EMAIL_CALLBACK': 'ninjapasswordless.utils.send_email_with_callback_token',
     
     # configurable function for sending sms
-    'PASSWORDLESS_SMS_CALLBACK': 'drfpasswordless.utils.send_sms_with_callback_token',
+    'PASSWORDLESS_SMS_CALLBACK': 'ninjapasswordless.utils.send_sms_with_callback_token',
 
     # Token Generation Retry Count
     'PASSWORDLESS_TOKEN_GENERATION_ATTEMPTS': 3
@@ -340,11 +340,11 @@ Pull requests are encouraged!
 
 Donations & Support
 ----
-If you found drfpasswordless useful, consider giving me a follow
+If you found ninjapasswordless useful, consider giving me a follow
 [@localghost](https://www.twitter.com/aaronykng) on Twitter and
 [@hi.aaron](https://www.instagram.com/hi.aaron) on Instagram.
 
-If you'd like to go a step further and are using drfpasswordless in your startup
+If you'd like to go a step further and are using ninjapasswordless in your startup
 or business, consider a donation:
 
 - BTC: `3FzSFeKVABL5Adh9Egoxh77gHbtg2kcTPk`

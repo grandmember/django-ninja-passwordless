@@ -1,6 +1,6 @@
 from django.utils.module_loading import import_string
-from drfpasswordless.settings import api_settings
-from drfpasswordless.utils import (
+from ninjapasswordless.settings import api_settings
+from ninjapasswordless.utils import (
     create_callback_token_for_user,
 )
 

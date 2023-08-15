@@ -44,9 +44,10 @@ def pytest_configure():
             'django.contrib.sites',
             'django.contrib.messages',
             'django.contrib.staticfiles',
-            'rest_framework',
-            'rest_framework.authtoken',
-            'drfpasswordless',
+            'django-ninja',
+            'pydantic',
+            'django-ninja-jwt',
+            'ninjapasswordless',
             'tests',
         ),
         PASSWORD_HASHERS=(
